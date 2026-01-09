@@ -5,6 +5,8 @@
 [![Platform: Android](https://img.shields.io/badge/Platform-Android-orange.svg)](https://developer.android.com/)
 [![NDK: Powered](https://img.shields.io/badge/NDK-C++17-red.svg)](https://developer.android.com/ndk)
 
+<img width="1151" height="647" alt="image" src="https://github.com/user-attachments/assets/4f8e23b3-a9a0-45e7-b5e2-793a9897883a" /><br>
+
 **SonicDecoder**는 차세대 AI 뮤직 탐색기 'SonicFinder'의 핵심 엔진을 검증하기 위한 초고성능 오디오 분석 및 온디바이스(On-device) LLM 추론 MVP 프로젝트입니다.
 
 ---
