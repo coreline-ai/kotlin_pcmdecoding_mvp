@@ -16,6 +16,7 @@
 *   **Ultra-Fast Native Engine**: C++ NDK와 하드웨어 가속(AMediaCodec)을 사용하여 수천 곡의 라이브러리를 초고속 분석합니다.
 *   **On-device Semantic Intelligence**: 인터넷 연결 없이 기기 내부에서 로컬 LLM을 구동하여 사용자의 자연어 요청을 음악적 태그로 변환합니다.
 *   **RAG-based Recommendation**: 음악의 물리적 특징(BPM, 에너지 등)을 6D 벡터화하여 사용자 의도에 가장 가까운 곡을 추천합니다.
+*   **Scalable Search**: 대규모 라이브러리를 위해 HNSW ANN + 히스토그램 매퍼로 고속 추천을 지원합니다.
 
 ---
 
@@ -30,25 +31,34 @@
   - **Tonal**: Key(조성), Mode(장/단조), Key Strength(조성 강도) 분석.
 
 ### 2. 온디바이스 지능형 인터페이스 (AI Engine)
-- **Multi-language NLI**: ML Kit 기반 다국어(8개국어+) 언어 식별 및 실시간 번역 지원.
+- **Multi-language NLI**: ML Kit 기반 다국어(9개국어+) 언어 식별 및 실시간 번역 지원.
 - **LLM Inference**: MediaPipe 기반 **Gemma-2B (int4)** 로컬 구동, 의도 파악 및 16개 상황 태그 매칭.
 - **Stability Improvement**: JNI 레이스 컨디션 해결을 위한 Mutex 동기화 적용으로 안정적인 추론 보장.
 
 ### 3. 지능형 라이브러리 관리 (Database)
-- **Incremental Analysis**: 파일 시그니처 감지를 통해 변경된 곡만 선택적으로 분석하는 효율적인 인덱싱.
+- **Incremental Scan**: MediaStore 변경분만 증분 스캔하여 분석 큐에 반영.
+- **Deletion Sync**: 라이브러리 감소 감지 시 FULL 스캔을 강제하여 삭제를 반영.
 - **Room SQLite Persistence**: 분석된 모든 오디오 피처와 6D 벡터 데이터를 로컬 DB에 안전하게 보관.
+
+### 4. 검색/추천 엔진 (RAG Search)
+- **6D Cosine Similarity**: 감성 벡터 기반 유사도 검색.
+- **ANN Index (HNSW)**: 10k+ 라이브러리에서 ANN 자동 전환.
+- **Fast Percentile Mapper**: 히스토그램 기반 O(1) 백분위 매핑.
+- **MMR Diversity**: 아티스트/앨범 쏠림 방지 리랭킹.
+- **Analysis-in-Progress Fallback**: 6D 미완료 트랙은 3D(energy/brightness/bpm) 폴백 검색 지원.
 
 ---
 
 ## 📊 현재 개발 상태 (Current Status)
 
-현재 프로젝트는 **핵심 기술 파이프라인이 90% 이상 완성**된 단계입니다.
+현재 프로젝트는 **핵심 기술 파이프라인이 완성**된 단계입니다.
 
 - [x] **NDK 분석 파이프라인**: MFCC, Spectral 피처 및 Tonal 분석 통합 완료.
 - [x] **온디바이스 LLM**: 다국어 지원 및 JNI 안정화 완료.
 - [x] **6D Mood Mapping**: `Warmth`, `Calm`, `Valence` 등을 포함한 6차원 감성 벡터 엔진 구축 완료.
-- [/] **Scalability**: 대용량 라이브러리(10k+) 대응을 위한 HNSW 인덱싱 도입 준비 중.
-- [/] **UI Expansion**: 6D 벡터 시각화 및 고급 믹싱 인터페이스 개발 중.
+- [x] **Scalability**: HNSW ANN + 히스토그램 매핑 적용 완료.
+- [x] **Library Sync**: MediaStore 증분 스캔 + 삭제 감지(FULL 스캔) 지원.
+- [ ] **UI Expansion**: 6D 벡터 시각화 및 고급 믹싱 인터페이스 개발 중.
 
 ---
 
@@ -57,7 +67,7 @@
 - **Languages**: Kotlin (Android), C++17 (NDK/JNI).
 - **Audio Processing**: Android Media NDK, FFTW-like DSP logic.
 - **AI/ML**: MediaPipe LLM Inference, Google ML Kit (Translation/ID).
-- **Architecture**: MVVM, Jetpack WorkManager, Room Persistence Library.
+- **Architecture**: MVVM(LLM MVP), UseCase/Repository, WorkManager, Room Persistence Library.
 
 ---
 
@@ -74,15 +84,25 @@ adb push gemma-2b-it-cpu-int4.bin /data/local/tmp/
 1. 저장소를 클론합니다.
 2. Android Studio에서 프로젝트를 엽니다.
 3. Gradle 빌드를 실행합니다.
-4. 앱 실행 시 **'Analyze All'** 버튼을 통해 기기 내 음악을 기술적으로 분석할 수 있습니다.
+4. 앱 실행 후 **LLM MVP** 탭에서 **'전체 분석 다시 실행 (DB 리셋)'** 버튼으로 라이브러리를 재분석할 수 있습니다.
+
+### CLI 명령 (ADB)
+```powershell
+.\gradlew.bat :app:assembleDebug
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+adb shell am start -n com.example.sonicdecodertest/.MainActivity
+adb logcat -s SonicDecoderTest:I
+```
 
 ---
 
 ## 📈 향후 로드맵 (Roadmap)
 
-1.  **ANN Indexing**: 1만 곡 이상의 대규모 라이브러리에서 실시간 벡터 검색이 가능한 ANN 엔진 도입.
-2.  **Visual Interaction**: 6차원 감성 벡터를 직접 조절할 수 있는 다차원 슬라이더 UI 구현.
-3.  **Cross-platform Core**: 분석 엔진(C++)의 재사용성을 극대화하여 멀티 플랫폼 확장 준비.
+1.  **Visual Interaction**: 6차원 감성 벡터를 직접 조절할 수 있는 다차원 슬라이더 UI 구현.
+2.  **Library Source 확장**: SAF 폴더 import + 길이 미확보 FD fallback 강화.
+3.  **Feature Upgrade**: onset/flux, band ratios, flatness, LUFS/LRA 등 추가.
+4.  **Schema 정합**: raw_json v1.1 스펙 정합 및 확장.
+5.  **Cross-platform Core**: 분석 엔진(C++)의 재사용성을 극대화하여 멀티 플랫폼 확장 준비.
 
 ---
 
