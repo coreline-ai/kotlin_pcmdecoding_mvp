@@ -53,14 +53,17 @@
 
 ## 📊 현재 개발 상태 (Current Status)
 
-현재 프로젝트는 **핵심 기술 파이프라인이 완성**된 단계입니다.
+현재 프로젝트는 **핵심 기술 파이프라인 완성** 및 **고도화된 UI/UX 적용** 단계입니다.
 
 - [x] **NDK 분석 파이프라인**: MFCC, Spectral 피처 및 Tonal 분석 통합 완료.
-- [x] **온디바이스 LLM**: 다국어 지원 및 JNI 안정화 완료.
+- [x] **온디바이스 LLM**: 다국어 지원, JNI 안정화, 추론 파이프라인 안전장치(isReady 체크) 적용 완료.
 - [x] **6D Mood Mapping**: `Warmth`, `Calm`, `Valence` 등을 포함한 6차원 감성 벡터 엔진 구축 완료.
 - [x] **Scalability**: HNSW ANN + 히스토그램 매핑 적용 완료.
 - [x] **Library Sync**: MediaStore 증분 스캔 + 삭제 감지(FULL 스캔) 지원.
-- [ ] **UI Expansion**: 6D 벡터 시각화 및 고급 믹싱 인터페이스 개발 중.
+- [x] **UI/UX Enhancement**:
+    - **Theme**: Energy Yellow(황금색) 메인 테마 적용, AI Test 탭 전용 Pastel Red 테마 적용.
+    - **Visuals**: 앨범 아트 표시, 직관적인 상태 아이콘(Ready/Processing/Failed), 믹스 탭 시각화 아이콘 적용.
+    - **Interaction**: 믹스 탭 라이브 프리뷰 연동, 검색창 초기화 버튼, 탭 간 네비게이션 스택 최적화.
 
 ---
 
@@ -100,11 +103,54 @@ adb logcat -s SonicDecoderTest:I
 
 ## 📈 향후 로드맵 (Roadmap)
 
-1.  **Visual Interaction**: 6차원 감성 벡터를 직접 조절할 수 있는 다차원 슬라이더 UI 구현.
+1.  **[완료] Visual Interaction**: 6차원 감성 벡터를 직접 조절할 수 있는 다차원 슬라이더 및 레이더 차트 UI 구현.
 2.  **Library Source 확장**: SAF 폴더 import + 길이 미확보 FD fallback 강화.
 3.  **Feature Upgrade**: onset/flux, band ratios, flatness, LUFS/LRA 등 추가.
 4.  **Schema 정합**: raw_json v1.1 스펙 정합 및 확장.
 5.  **Cross-platform Core**: 분석 엔진(C++)의 재사용성을 극대화하여 멀티 플랫폼 확장 준비.
+
+---
+
+## 📚 학술적 배경 및 핵심 기술 (Academic Background & Core Technologies)
+
+본 프로젝트에 적용된 핵심 알고리즘들은 검증된 학술적 연구와 산업 표준 기술을 기반으로 설계되었습니다.
+
+### 1. 음악 분석 및 특징 추출 (Audio DSP)
+네이티브 엔진(`native-lib.cpp`)에서 사용되는 로직의 이론적 기초입니다.
+
+*   **BPM 및 비트 탐지 (Tempo Analysis)**
+    *   **핵심 알고리즘**: 에너지 엔벨로프의 자기상관(Autocorrelation) 함수 필터링.
+    *   **관련 논문**: Scheirer, E. D. (1998), *"Tempo and beat analysis of acoustic musical signals."* 현대 오디오 분석 엔진들이 템포를 측정하는 가장 표준적인 기법의 토대가 된 연구입니다.
+
+*   **조성 및 화음 분석 (Key/Tonal Detection)**
+    *   **핵심 알고리즘**: Krumhansl-Schmuckler 키 찾기 알고리즘 (코드 내 24개 Major/Minor Profile 사용).
+    *   **관련 문헌**: Krumhansl, C. L. (1990), *"Cognitive Foundations of Musical Pitch."* 음악 심리학과 물리적 수치를 결합한 조성 분석의 표준 바이블입니다.
+
+*   **음색 특징 추출 (MFCC)**
+    *   **핵심 알고리즘**: Mel-Frequency Cepstral Coefficients.
+    *   **관련 논문**: Davis, S., & Mermelstein, P. (1980), *"Comparison of parametric representations for monosyllabic word recognition."* 인간의 청각 인지 특성을 반영한 특징 추출 표준입니다.
+
+### 2. 검색 및 추천 알고리즘 (Information Retrieval)
+검색 엔진(`SimilaritySearchEngine.kt`)에서 대규모 데이터를 고속으로 처리하기 위해 채택된 기술입니다.
+
+*   **고속 근사 검색 (ANN Search)**
+    *   **핵심 알고리즘**: HNSW (Hierarchical Navigable Small World).
+    *   **관련 논문**: Malkov, Y. A., & Yashunin, D. A. (2018), *"Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs."*
+
+*   **추천 결과 다양성 확보 (Diversity Re-ranking)**
+    *   **핵심 알고리즘**: MMR (Maximal Marginal Relevance).
+    *   **관련 논문**: Carbonell, J., & Goldstein, J. (1998), *"The use of MMR, diversity-based reranking for reordering documents."* 추천 결과 내 아티스트/앨범 중복을 방지하기 위해 사용되었습니다.
+
+### 3. 최신 온디바이스 AI 기술 (On-device AI)
+NLI 엔진(`LlmManager.kt`)에서 사용하는 기술 스택입니다.
+
+*   **Gemma 2b (Google)**: 온디바이스 소형 언어 모델.
+*   **MediaPipe GenAI**: 구글의 최신 실시간 온디바이스 LLM 추론 프레임워크.
+*   **기술 백서**: Gemma Team, Google (2024), *"Gemma: Open Models Based on Gemini Research and Technology."*
+
+### 4. 고유 기술 자산 (Proprietary IP)
+*   **6차원 감성 벡터 매핑 수식**: 오디오의 물리적 수치(BPM, Centroid 등)를 6가지 감성 축(Energy, Calm 등)으로 정규화하여 매핑하는 **특정 가중치와 수식(`MoodVectorCalculator.kt`)**은 본 프로젝트 고유의 노하우입니다.
+*   **하이브리드 NLI 추론 파이프라인**: 다국어 번역과 키워드 힌트를 LLM 결과와 교차 검증하는 3단계 워크플로우는 이 앱만의 특화된 기술 아키텍처입니다.
 
 ---
 
